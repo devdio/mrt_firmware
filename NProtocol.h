@@ -1,5 +1,5 @@
-#ifndef BBPROTOCOL_H
-#define BBPROTOCOL_H
+#ifndef NPROTOCOL_H
+#define NPROTOCOL_H
 
 // 2023-11-27
 // 스크래치쪽의 CommandType과 아두이노쪽의 ACT_ 번호가 다른 것을 주의한다.
@@ -64,4 +64,6 @@
 #define ANYPIN    0xF0
 #define CALLOK    0xF1
 #define DEBUG     true
+
+
 #endif
