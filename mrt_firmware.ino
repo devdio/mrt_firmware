@@ -61,15 +61,17 @@ uint8_t returnBuffer[PROTOCOL_PACKET_LEN];
 uint8_t reportBuffer[PROTOCOL_PACKET_LEN];
 
 
-// 20240227
-// uint8_t AVAILABLE_PINS[] = {P0, P1, P2, P3, P4, P7, P11, P12};
-// P0, P1, P2핀은 터치핀 전용
-// uint8_t AVAILABLE_PINS_LENGTH = 5;
-// uint8_t AVAILABLE_PINS[] = {P3, P4, P7, P11, P12};
-// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+uint8_t txValue[] = { 0xFF, 0x55, RETURN_LENGTH, 0, ACT_NOTHING, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0D, 0x0A };
+uint8_t reportValue[] = { 0xFF, 0x66, RETURN_LENGTH, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0D, 0x0A };
 
-// SemaphoreHandle_t  serial_mutex;
+// 센서값 리포터의 송신을 위한 타이밍
 unsigned long previousMillis = millis();
+double lastTime = 0.0;
+double currentTime = 0.0;
+
+// 받은 패킷을 파싱할 때 사용하는 변수
+uint8_t cmd_idx = 0;
+int action = 0;
 
 // val Union
 union {
@@ -84,30 +86,14 @@ union {
   short shortVal;
 } valShort;
 
-uint8_t txValue[] = { 0xFF, 0x55, RETURN_LENGTH, 0, ACT_NOTHING, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0D, 0x0A };
-uint8_t reportValue[] = { 0xFF, 0x66, RETURN_LENGTH, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0D, 0x0A };
-
-byte idx = 0;
-byte dataLen;
-
-double lastTime = 0.0;
-double currentTime = 0.0;
-
-uint8_t cmd_idx = 0;
-int action = 0;
-
-
-
-
-
+// 입력(스크래치->ESP32) 패킷에서 한개의 값 읽기
 unsigned char readBuffer(int index){
   return rxBuffer[index];
 }
 
-
-void writeBuffer(int idx, unsigned char c){
-  rxBuffer[idx] = c;
-}
+// void writeBuffer(int idx, unsigned char c){
+//   rxBuffer[idx] = c;
+// }
 
 // for Serial
 // void writeSerial(unsigned char c){
@@ -115,11 +101,13 @@ void writeBuffer(int idx, unsigned char c){
 // }
 
 // for BLE
+// 센서값을 스크래치에 보내기위한 버퍼에 넣어둔다.
 void writeSerial(int idx, unsigned char c){
   returnBuffer[idx] = (uint8_t) c;
 }
 
-// for BLE
+// for BLE 
+// BLE의 캐릭터리스틱에 센서값을 복사한다. 
 void sendPacket() {
   memcpy(txValue, returnBuffer, PROTOCOL_PACKET_LEN);
   notifyFlag = true;
@@ -127,29 +115,10 @@ void sendPacket() {
 
 void callNoResponse(uint8_t action){
   // 응답을 보내지않음.
-  // writeHead(0);  // ff, 55
-  // writeSerial(2, RETURN_LENGTH);   // lenght
-  // writeSerial(3, 0);               // cmd_idx을 0으로 보내면 스크래치에서 무시된다.
-  // writeSerial(4, action);
-  // writeSerial(5, 0x00);  
-  // writeSerial(6, 0x00);
-  // writeSerial(7, 0x00);
-  // writeSerial(8, 0x00);
-  // writeSerial(9, 0x00);
-  // writeSerial(10, 0x00);
-  // writeSerial(11, 0x00);
-  // writeSerial(12, 0x00);
-  // writeSerial(13, 0x00);
-  // writeSerial(14, 0x00);
-  // writeSerial(15, 0x00);
-  // writeSerial(16, 0x00);
-  // writeSerial(17, 0x00);
-  // writeEnd(18);  // 13, 10
 }
 
 // 스크래치에 모든 데이터를 0으로 보낸다.
 void callZERO(uint8_t action){
-  
     writeHead(0);  // ff, 55
     writeSerial(2, RETURN_LENGTH);   // lenght
     writeSerial(3, cmd_idx);
@@ -237,7 +206,7 @@ void writeEnd(int i){
   writeSerial(i+1, 0x0a);
 }
 
-void sendFloat(int i, float value){
+void writeFloat(int i, float value){
   val.floatVal = value;
   writeSerial(i, val.byteVal[0]);
   writeSerial(i+1, val.byteVal[1]);
@@ -245,21 +214,11 @@ void sendFloat(int i, float value){
   writeSerial(i+3, val.byteVal[3]);
 }
 
-void sendShort(int i, double value){
+void writeShort(int i, double value){
   valShort.shortVal = value;
   writeSerial(i, valShort.byteVal[0]);    // low
   writeSerial(i+1, valShort.byteVal[1]);  // hight
 }
-
-// void writeShort(int i, short value){
-//   byte lowerByte = value & 0xFF;
-//   byte upperByte = (value >> 8) & 0xFF;
-//   writeSerial(i, upperByte);
-//   writeSerial(i+1, lowerByte);
-//   Serial.println(value);
-//   Serial.println(String(upperByte, HEX));
-//   Serial.println(String(lowerByte, HEX));
-// }
 
 short readShort(int idx){
   valShort.byteVal[0] = readBuffer(idx);
