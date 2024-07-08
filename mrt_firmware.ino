@@ -25,17 +25,38 @@
 // --------------------------------------------
 // PIN MAP
 // --------------------------------------------
+// 입력
 #define INPUT_PIN_01    12
-#define INPUT_PIN_01    12
-#define INPUT_PIN_01    12
-#define INPUT_PIN_01    12
-#define INPUT_PIN_01    12
+#define INPUT_PIN_02    12
+#define INPUT_PIN_03    12
+#define INPUT_PIN_04    12
+#define INPUT_PIN_05    12
+// 출력
+#define OUTPUT_PIN_01    12
+#define OUTPUT_PIN_02    12
+#define OUTPUT_PIN_03    12
+#define OUTPUT_PIN_04    12
+#define OUTPUT_PIN_05    12
+// 모터
+// 초음파
+// 서보모터
 
-#define OUTPUT_PIN_01    12
-#define OUTPUT_PIN_01    12
-#define OUTPUT_PIN_01    12
-#define OUTPUT_PIN_01    12
-#define OUTPUT_PIN_01    12
+// --------------------------------------------------------------------
+// 모터 드라이버 사용
+// https://wiki.dfrobot.com/HR8833_Dual_DC_Motor_Driver__SKU_DIR0040_
+// https://lastminuteengineers.com/drv8833-arduino-tutorial/
+void set_motor_pwm(int pwm, int IN1_PIN, int IN2_PIN)
+{
+  if (pwm < 0) {  // reverse speeds
+    analogWrite(IN1_PIN, -pwm);
+    digitalWrite(IN2_PIN, LOW);
+
+  } else { // stop or forward
+    digitalWrite(IN1_PIN, LOW);
+    analogWrite(IN2_PIN, pwm);
+  }
+}
+
 
 const int ULTRASONIC_TIMEOUT_MICRO = 500000;  // 500 millis secs
 bool rcInitialize = false;
@@ -62,6 +83,8 @@ uint8_t reportBuffer[PROTOCOL_PACKET_LEN];
 
 
 uint8_t txValue[] = { 0xFF, 0x55, RETURN_LENGTH, 0, ACT_NOTHING, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0D, 0x0A };
+uint8_t txTestValue[] = { 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 0x0D, 0x0A };
+
 uint8_t reportValue[] = { 0xFF, 0x66, RETURN_LENGTH, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x0D, 0x0A };
 
 // 센서값 리포터의 송신을 위한 타이밍
@@ -356,7 +379,7 @@ void processAnalog(void) {
 
         // writeSerial(analogValue);
         // writeSerial(0x00);
-        sendShort(5, analogValue); // 5, 6  0~1023
+        writeShort(5, analogValue); // 5, 6  0~1023
 
         writeSerial(7, 0x00);
         writeSerial(8, 0x00);
@@ -413,10 +436,11 @@ void parseData() {
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 // BLE
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-#define HWID "0000000000"
-#define MRT_NODE_NAME "MRT-NODE"
+// #define HWID "0000000000"
+// #define MRT_NODE_NAME "MRT-NODE"
 // BLE Service Name
-const char* DEVICE_NAME = "MRT-NODE";
+// const char* DEVICE_NAME = "MRT-NODE";
+const char* DEVICE_NAME = "BitBlock MINI";
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pTxCharacteristic;
@@ -472,6 +496,7 @@ class MyCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* pCharacteristic) {
     // std::string rxValue = pCharacteristic->getValue();
     String rxValue = pCharacteristic->getValue();
+    Serial.println(rxValue);
 
     if (rxValue.length() == PROTOCOL_PACKET_LEN) {
     // 스크래치에서 온 데이터를 ESP32에서 사용하는 버퍼로 복사한다.
@@ -511,6 +536,8 @@ class MyCallbacks : public BLECharacteristicCallbacks {
 // -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 // core 0 -> wifi, ble task
 // core 1 -> arduino task
+
+
 
 void setup() {
   Serial.begin(115200);
@@ -562,6 +589,7 @@ void reportSensor() { /* something */ }
 
 void loop() {
   if (deviceConnected) {
+    // 스크래치에서 명령을 받으면 notifyFlag가 true가 되어서 리턴을 보낸다.
     if(notifyFlag) {
       pTxCharacteristic->setValue(txValue, PROTOCOL_PACKET_LEN);
       pTxCharacteristic->notify();
@@ -578,7 +606,6 @@ void loop() {
   // ble connect gauge
   if (!deviceConnected) {
     delay(DISPLAY_INTERVAL);
-    Serial.println('>');
   }
 
   // disconnecting
