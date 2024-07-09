@@ -6,11 +6,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-// #include <Adafruit_NeoPixel.h>
-// #define MPU6050_TOCKN
-// #define BITBLOCK_DEBUG
-// #include "EspEasyServo.h"
-// #include "EspEasyPWM.h"
+
 #include "Wire.h"
 #include <DHT11.h>
 // #include <NewPing.h>
@@ -25,21 +21,47 @@
 // --------------------------------------------
 // PIN MAP
 // --------------------------------------------
-// 입력
-#define INPUT_PIN_01    12
-#define INPUT_PIN_02    12
-#define INPUT_PIN_03    12
-#define INPUT_PIN_04    12
-#define INPUT_PIN_05    12
-// 출력
-#define OUTPUT_PIN_01    12
-#define OUTPUT_PIN_02    12
-#define OUTPUT_PIN_03    12
-#define OUTPUT_PIN_04    12
-#define OUTPUT_PIN_05    12
-// 모터
-// 초음파
+// 입력핀
+#define INPUT_PIN_01 33     // ADC1_CH5
+#define INPUT_PIN_02 34     // ADC1_CH6
+#define INPUT_PIN_03 35     // ADC1_CH7
+#define INPUT_PIN_04 36     // SENSOR_VP  ADC1_CH0
+#define INPUT_PIN_05 39     // SENSOR_VN  ADC1_CH3
+
+// 출력핀
+#define OUTPUT_PIN_01 23
+#define OUTPUT_PIN_02 25
+#define OUTPUT_PIN_03 26
+#define OUTPUT_PIN_04 27
+#define OUTPUT_PIN_05 32
+
+// 모터핀
+#define MOT_R1_1 18
+#define MOT_R1_2 19
+#define MOT_R2_1 16
+#define MOT_R2_2 17
+#define MOT_L1_1 15
+#define MOT_L1_2 2
+#define MOT_L2_1 12
+#define MOT_L2_2 14
+
+// 초음파 ???
+// VCC
+#define ULTRA_TRIG 4
+#define UlTRA_ECHO 5
+// GND
+
 // 서보모터
+#define SERVO_PIN 13
+
+// 자이로 ???
+#define GYRO_PIN_1 22
+#define GYRO_PIN_2 21
+
+// LCD ???
+#define LCD_PIN_1 22
+#define LCD_PIN_2 21
+
 
 // --------------------------------------------------------------------
 // 모터 드라이버 사용
@@ -56,6 +78,14 @@ void set_motor_pwm(int pwm, int IN1_PIN, int IN2_PIN)
     analogWrite(IN2_PIN, pwm);
   }
 }
+// set_motor_pwm(80, MOT_L2_1, MOT_L2_2);       // CCW
+// set_motor_pwm(-80, MOT_L2_1, MOT_L2_2);      // CW
+// set_motor_pwm(100, MOT_L1_1, MOT_L1_2);      // CCW
+// set_motor_pwm(-100, MOT_L1_1, MOT_L1_2);     // CW
+// set_motor_pwm(100, MOT_R1_1, MOT_R1_2);      // CCW
+// set_motor_pwm(-100, MOT_R1_1, MOT_R1_2);     // CW
+// set_motor_pwm(100, MOT_R2_1, MOT_R2_2);      // CCW
+// set_motor_pwm(-100, MOT_R2_1, MOT_R2_2);     // CW
 
 
 const int ULTRASONIC_TIMEOUT_MICRO = 500000;  // 500 millis secs
@@ -537,8 +567,6 @@ class MyCallbacks : public BLECharacteristicCallbacks {
 // core 0 -> wifi, ble task
 // core 1 -> arduino task
 
-
-
 void setup() {
   Serial.begin(115200);
   // Create the BLE Device
@@ -582,6 +610,27 @@ void setup() {
   //set the resolution to 10 bits (0-1023)
   analogReadResolution(10);
   // delay(200);
+
+  // ----------------------------------------
+  // 모터핀 초기화 
+  //-----------------------------------------
+  pinMode(MOT_L1_1, OUTPUT);
+  pinMode(MOT_L1_2, OUTPUT);
+  pinMode(MOT_L2_1, OUTPUT);
+  pinMode(MOT_L2_2, OUTPUT);
+  pinMode(MOT_R1_1, OUTPUT);
+  pinMode(MOT_R1_2, OUTPUT);
+  pinMode(MOT_R2_1, OUTPUT);
+  pinMode(MOT_R2_2, OUTPUT);
+
+  digitalWrite(MOT_L1_1, LOW);
+  digitalWrite(MOT_L1_2, LOW);
+  digitalWrite(MOT_L2_1, LOW);
+  digitalWrite(MOT_L2_2, LOW);
+  digitalWrite(MOT_R1_1, LOW);
+  digitalWrite(MOT_R1_2, LOW);
+  digitalWrite(MOT_R2_1, LOW);
+  digitalWrite(MOT_R2_2, LOW);
 
 }; // *** end of setup()
 
