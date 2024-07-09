@@ -429,7 +429,52 @@ void processAnalog(void) {
   }
 }
 
+void processDCMotor() {
+
+  // run_dcmotor(motorNo, motorDir, motorSpeed)
+  int motorNo = readBuffer(5);
+  int motorDir = (readBuffer(6) == 0) ? -1 : 1;   // 0: CW  1: CCW (Counter Clock Wise)
+  int motorSpeed = readBuffer(7);
+  
+  Serial.println('**************************');
+  Serial.println(motorNo);
+  Serial.println(motorSpeed * motorDir);
+
+  if (motorNo == 0) {
+    // R1
+    Serial.println("R1---");
+    set_motor_pwm(motorSpeed * motorDir, MOT_R1_1, MOT_R1_2);
+    // digitalWrite(MOT_R1_1, HIGH);
+    // digitalWrite(MOT_R1_2, LOW);
+  } else if(motorNo == 1) {
+    // R2
+    Serial.println("R2---");
+    set_motor_pwm(motorSpeed * motorDir, MOT_R2_1, MOT_R2_2);
+  } else if(motorNo == 2) {
+    // L1
+    Serial.println("L1---");
+    set_motor_pwm(motorSpeed * motorDir, MOT_L1_1, MOT_L1_2);
+  } else if (motorNo == 3) {
+    // L2
+    Serial.println("L2---");
+    set_motor_pwm(motorSpeed * motorDir, MOT_L2_1, MOT_L2_2);
+  }
+  delay(5);
+}
+
 void processReset() {
+  // 모터 멈춤
+  Serial.println("STOP------------");
+  digitalWrite(MOT_R1_1, LOW);
+  digitalWrite(MOT_R1_2, LOW);
+  digitalWrite(MOT_R2_1, LOW);
+  digitalWrite(MOT_R2_2, LOW);
+
+  digitalWrite(MOT_L1_1, LOW);
+  digitalWrite(MOT_L1_2, LOW);
+  digitalWrite(MOT_L2_1, LOW);
+  digitalWrite(MOT_L2_2, LOW);
+  
 }
 
 
@@ -446,20 +491,32 @@ void parseData() {
 
   switch(action){
     case ACT_DIGITAL:
+    {
       processDigital();
       break;  
-    case ACT_ANALOG:
+    }
+    case ACT_ANALOG: 
+    {
       processAnalog();
-      break;  
+      break;
+    }
+    case ACT_DCMOTOR:
+    {
+      processDCMotor();
+      callOK(ACT_DCMOTOR);
+    }  
     case ACT_RESET_BOARD:
     {
+      Serial.println("RESET@");
       processReset();
       callOK(ACT_RESET_BOARD);
+      break;  
     }
-    break;  
     default:
+    {
       callNG(ACT_ERROR);
       break;
+    }
   }
 }
 
@@ -526,7 +583,6 @@ class MyCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* pCharacteristic) {
     // std::string rxValue = pCharacteristic->getValue();
     String rxValue = pCharacteristic->getValue();
-    Serial.println(rxValue);
 
     if (rxValue.length() == PROTOCOL_PACKET_LEN) {
     // 스크래치에서 온 데이터를 ESP32에서 사용하는 버퍼로 복사한다.
@@ -623,14 +679,14 @@ void setup() {
   pinMode(MOT_R2_1, OUTPUT);
   pinMode(MOT_R2_2, OUTPUT);
 
-  digitalWrite(MOT_L1_1, LOW);
-  digitalWrite(MOT_L1_2, LOW);
-  digitalWrite(MOT_L2_1, LOW);
-  digitalWrite(MOT_L2_2, LOW);
-  digitalWrite(MOT_R1_1, LOW);
-  digitalWrite(MOT_R1_2, LOW);
-  digitalWrite(MOT_R2_1, LOW);
-  digitalWrite(MOT_R2_2, LOW);
+  // digitalWrite(MOT_L1_1, LOW);
+  // digitalWrite(MOT_L1_2, LOW);
+  // digitalWrite(MOT_L2_1, LOW);
+  // digitalWrite(MOT_L2_2, LOW);
+  // digitalWrite(MOT_R1_1, LOW);
+  // digitalWrite(MOT_R1_2, LOW);
+  // digitalWrite(MOT_R2_1, LOW);
+  // digitalWrite(MOT_R2_2, LOW);
 
 }; // *** end of setup()
 
