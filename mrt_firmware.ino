@@ -465,15 +465,14 @@ void processDCMotor() {
 void processReset() {
   // 모터 멈춤
   Serial.println("STOP------------");
-  digitalWrite(MOT_R1_1, LOW);
-  digitalWrite(MOT_R1_2, LOW);
-  digitalWrite(MOT_R2_1, LOW);
-  digitalWrite(MOT_R2_2, LOW);
-
-  digitalWrite(MOT_L1_1, LOW);
-  digitalWrite(MOT_L1_2, LOW);
-  digitalWrite(MOT_L2_1, LOW);
-  digitalWrite(MOT_L2_2, LOW);
+  analogWrite(MOT_R1_1, LOW);
+  analogWrite(MOT_R1_2, LOW);
+  analogWrite(MOT_R2_1, LOW);
+  analogWrite(MOT_R2_2, LOW);
+  analogWrite(MOT_L1_1, LOW);
+  analogWrite(MOT_L1_2, LOW);
+  analogWrite(MOT_L2_1, LOW);
+  analogWrite(MOT_L2_2, LOW);
   
 }
 
@@ -504,6 +503,7 @@ void parseData() {
     {
       processDCMotor();
       callOK(ACT_DCMOTOR);
+      break;
     }  
     case ACT_RESET_BOARD:
     {
@@ -583,7 +583,7 @@ class MyCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* pCharacteristic) {
     // std::string rxValue = pCharacteristic->getValue();
     String rxValue = pCharacteristic->getValue();
-
+    Serial.println("--- somthing write ---");
     if (rxValue.length() == PROTOCOL_PACKET_LEN) {
     // 스크래치에서 온 데이터를 ESP32에서 사용하는 버퍼로 복사한다.
     // str을 char*로 바꾸어서 복사한다.
