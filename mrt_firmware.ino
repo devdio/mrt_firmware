@@ -63,6 +63,10 @@
 #define LCD_PIN_2 21
 
 
+// ESP32 API  https://docs.espressif.com/projects/arduino-esp32/en/latest/api/ledc.html
+EspEasyServo servo(LEDC_CHANNEL_0, (gpio_num_t)SERVO_PIN);
+
+
 // --------------------------------------------------------------------
 // 모터 드라이버 사용
 // https://wiki.dfrobot.com/HR8833_Dual_DC_Motor_Driver__SKU_DIR0040_
@@ -486,6 +490,15 @@ void processDCMotor() {
   delay(5);
 }
 
+void processServo() 
+{
+  Serial.println("Servo Motor >>>>>>>>>>>>>>>>>>");
+  int angle = readBuffer(5);
+  servo.setServo(angle);
+  delay(100);
+  callOK(ACT_SERVO);
+}
+
 void processReset() {
   // 모터 멈춤
   Serial.println("STOP------------");
@@ -529,6 +542,11 @@ void parseData() {
       callOK(ACT_DCMOTOR);
       break;
     }  
+    case ACT_SERVO:
+    {
+      processServo();
+      break;
+    }
     case ACT_RESET_BOARD:
     {
       Serial.println("RESET@");
