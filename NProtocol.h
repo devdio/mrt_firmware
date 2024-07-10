@@ -50,6 +50,10 @@
 #define ANALOG_OUTPUT   0x01
 #define ANALOG_INPUT    0x02
 
+#define DCMOTOR_RUN       0x01
+#define DCMOTOR_STOP      0x02
+
+
 #define RCCAR_FORWARD       0x01
 #define RCCAR_BACKWARD      0x02
 #define RCCAR_RLSPEED       0x03

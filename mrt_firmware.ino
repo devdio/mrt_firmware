@@ -432,32 +432,56 @@ void processAnalog(void) {
 void processDCMotor() {
 
   // run_dcmotor(motorNo, motorDir, motorSpeed)
-  int motorNo = readBuffer(5);
-  int motorDir = (readBuffer(6) == 0) ? -1 : 1;   // 0: CW  1: CCW (Counter Clock Wise)
-  int motorSpeed = readBuffer(7);
+  int mode = readBuffer(5);
+  int motorNo = readBuffer(6);
   
-  Serial.println('**************************');
-  Serial.println(motorNo);
-  Serial.println(motorSpeed * motorDir);
+  switch(mode){
+    case DCMOTOR_RUN: {
+      int motorDir = (readBuffer(7) == 0) ? -1 : 1;   // 0: CW  1: CCW (Counter Clock Wise)
+      int motorSpeed = readBuffer(8);
 
-  if (motorNo == 0) {
-    // R1
-    Serial.println("R1---");
-    set_motor_pwm(motorSpeed * motorDir, MOT_R1_1, MOT_R1_2);
-    // digitalWrite(MOT_R1_1, HIGH);
-    // digitalWrite(MOT_R1_2, LOW);
-  } else if(motorNo == 1) {
-    // R2
-    Serial.println("R2---");
-    set_motor_pwm(motorSpeed * motorDir, MOT_R2_1, MOT_R2_2);
-  } else if(motorNo == 2) {
-    // L1
-    Serial.println("L1---");
-    set_motor_pwm(motorSpeed * motorDir, MOT_L1_1, MOT_L1_2);
-  } else if (motorNo == 3) {
-    // L2
-    Serial.println("L2---");
-    set_motor_pwm(motorSpeed * motorDir, MOT_L2_1, MOT_L2_2);
+      Serial.println('**************************');
+      Serial.println(motorNo);
+      Serial.println(motorSpeed * motorDir);
+
+      if (motorNo == 0) {
+        // R1
+        set_motor_pwm(motorSpeed * motorDir, MOT_R1_1, MOT_R1_2);
+      } else if(motorNo == 1) {
+        // R2
+        set_motor_pwm(motorSpeed * motorDir, MOT_R2_1, MOT_R2_2);
+      } else if(motorNo == 2) {
+        // L1
+        set_motor_pwm(motorSpeed * motorDir, MOT_L1_1, MOT_L1_2);
+      } else if (motorNo == 3) {
+        // L2
+        set_motor_pwm(motorSpeed * motorDir, MOT_L2_1, MOT_L2_2);
+      }
+      break;
+    }
+    case DCMOTOR_STOP: {
+      if (motorNo == 0) {
+        // R1
+        analogWrite(MOT_R1_1, 0);
+        analogWrite(MOT_R1_2, 0);
+      } else if(motorNo == 1) {
+        // R2
+        analogWrite(MOT_R2_1, 0);
+        analogWrite(MOT_R2_2, 0);
+      } else if(motorNo == 2) {
+        // L1
+        analogWrite(MOT_L1_1, 0);
+        analogWrite(MOT_L1_2, 0);
+      } else if (motorNo == 3) {
+        // L2
+        analogWrite(MOT_L2_1, 0);
+        analogWrite(MOT_L2_2, 0);
+      }
+      break;
+    }
+    default:{
+      break;
+    }
   }
   delay(5);
 }
@@ -679,14 +703,15 @@ void setup() {
   pinMode(MOT_R2_1, OUTPUT);
   pinMode(MOT_R2_2, OUTPUT);
 
-  // digitalWrite(MOT_L1_1, LOW);
-  // digitalWrite(MOT_L1_2, LOW);
-  // digitalWrite(MOT_L2_1, LOW);
-  // digitalWrite(MOT_L2_2, LOW);
-  // digitalWrite(MOT_R1_1, LOW);
-  // digitalWrite(MOT_R1_2, LOW);
-  // digitalWrite(MOT_R2_1, LOW);
-  // digitalWrite(MOT_R2_2, LOW);
+  // 모터 모두 멈춤
+  analogWrite(MOT_R1_1, 0);
+  analogWrite(MOT_R1_2, 0);
+  analogWrite(MOT_R2_1, 0);
+  analogWrite(MOT_R2_2, 0);
+  analogWrite(MOT_L1_1, 0);
+  analogWrite(MOT_L1_2, 0);
+  analogWrite(MOT_L2_1, 0);
+  analogWrite(MOT_L2_2, 0);
 
 }; // *** end of setup()
 
