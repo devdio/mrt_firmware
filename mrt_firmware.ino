@@ -10,6 +10,7 @@
 #include "Wire.h"
 #include <DHT11.h>
 // #include <NewPing.h>
+#include "EspEasyServo.h"
 
 // NODE용 헤더
 #include "NProtocol.h"
@@ -64,7 +65,7 @@
 
 
 // ESP32 API  https://docs.espressif.com/projects/arduino-esp32/en/latest/api/ledc.html
-EspEasyServo servo(LEDC_CHANNEL_0, (gpio_num_t)SERVO_PIN);
+EspEasyServo servo(LEDC_CHANNEL_0, (gpio_num_t)13);
 
 
 // --------------------------------------------------------------------
@@ -492,10 +493,15 @@ void processDCMotor() {
 
 void processServo() 
 {
-  Serial.println("Servo Motor >>>>>>>>>>>>>>>>>>");
-  int angle = readBuffer(5);
+  
+  int pin = readBuffer(5); // 현재는 필요없지만, 
+  int angle = readBuffer(6);
+
+  Serial.print("Angle : ");
+  Serial.println(angle);
+
   servo.setServo(angle);
-  delay(100);
+  delay(200);
   callOK(ACT_SERVO);
 }
 
@@ -623,8 +629,10 @@ class MyCallbacks : public BLECharacteristicCallbacks {
 
   // 스크래치가 BLE에 메세지를 write하면 실행되는 콜백.
   void onWrite(BLECharacteristic* pCharacteristic) {
-    // std::string rxValue = pCharacteristic->getValue();
-    String rxValue = pCharacteristic->getValue();
+    // esp32 board : 2.0.17
+    std::string rxValue = pCharacteristic->getValue();
+    // esp32 board : 3.0.2
+    // String rxValue = pCharacteristic->getValue();
     Serial.println("--- somthing write ---");
     if (rxValue.length() == PROTOCOL_PACKET_LEN) {
     // 스크래치에서 온 데이터를 ESP32에서 사용하는 버퍼로 복사한다.
