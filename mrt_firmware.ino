@@ -7,10 +7,10 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
-#include "Wire.h"
-#include <DHT11.h>
+// #include "Wire.h"
+// #include <DHT11.h>
 // #include <NewPing.h>
-#include "EspEasyServo.h"
+// #include "EspEasyServo.h"
 
 // NODE용 헤더
 #include "NProtocol.h"
@@ -29,12 +29,16 @@
 #define INPUT_PIN_04 36     // SENSOR_VP  ADC1_CH0
 #define INPUT_PIN_05 39     // SENSOR_VN  ADC1_CH3
 
+int INPUT_PINS[5] = {INPUT_PIN_01, INPUT_PIN_02, INPUT_PIN_03, INPUT_PIN_04, INPUT_PIN_05};
+
 // 출력핀
 #define OUTPUT_PIN_01 23
 #define OUTPUT_PIN_02 25
 #define OUTPUT_PIN_03 26
 #define OUTPUT_PIN_04 27
 #define OUTPUT_PIN_05 32
+
+int OUTPUT_PINS[5] = {OUTPUT_PIN_01, OUTPUT_PIN_02, OUTPUT_PIN_03, OUTPUT_PIN_04, OUTPUT_PIN_05};
 
 // 모터핀
 #define MOT_R1_1 18
@@ -65,7 +69,7 @@
 
 
 // ESP32 API  https://docs.espressif.com/projects/arduino-esp32/en/latest/api/ledc.html
-EspEasyServo servo(LEDC_CHANNEL_0, (gpio_num_t)13);
+// EspEasyServo servo(LEDC_CHANNEL_0, (gpio_num_t)13);
 
 
 // --------------------------------------------------------------------
@@ -306,29 +310,52 @@ long readLong(int idx){
 // DIGITAL_PULLUP = 0x03
 void processDigital(void) {
   int dir = readBuffer(5);
-  int pin = readBuffer(6);
+ 
+  Serial.print("processDigital dir : ");
+  Serial.println(dir);
 
   switch(dir){
     case DIGITAL_OUTPUT: 
       {
+        int pin = readBuffer(6);
+        int _gpio = OUTPUT_PINS[pin-1];
+        
+        Serial.print("gpio : ");
+        Serial.println(_gpio);
+     
         int val = readBuffer(7);
-        pinMode(pin, OUTPUT);
+        Serial.print("value : ");
+        Serial.println(val);
+        
+        pinMode(_gpio, OUTPUT);
         delay(5);
-        digitalWrite(pin, val);
+        digitalWrite(_gpio, val);
         callOK(ACT_DIGITAL);
       }
       break;
     case DIGITAL_INPUT:
       {
-        pinMode(pin, INPUT);
+        int pin = readBuffer(6);
+        int _gpio = INPUT_PINS[pin-1];
+        
+        Serial.println("DIGITAL INPUT");
+        Serial.print("_gpio : ");
+        Serial.println(_gpio);
+
+        pinMode(_gpio, INPUT);
         delay(10);
-        int val = digitalRead(pin);
+
+        int digitalVal = digitalRead(_gpio);
         delay(10);
+
+        Serial.print("value : ");
+        Serial.println(digitalVal);
+
         writeHead(0);  // ff, 55
         writeSerial(2, RETURN_LENGTH);
         writeSerial(3, cmd_idx);
         writeSerial(4, DIGITAL_INPUT);
-        writeSerial(5, val);  
+        writeSerial(5, digitalVal);  
         writeSerial(6, 0x00);  
         writeSerial(7, 0x00);
         writeSerial(8, 0x00);
@@ -343,10 +370,17 @@ void processDigital(void) {
         writeSerial(17, 0x00);
         writeEnd(18);  // 13, 10
         sendPacket();
+
       } 
       break;
     case DIGITAL_PULLUP:
       {
+        int pin = readBuffer(6);
+        pin = INPUT_PINS[pin-1];
+        
+        Serial.print("pin : ");
+        Serial.println(pin);
+
         pinMode(pin, INPUT_PULLUP);
         delay(10);
         int val = digitalRead(pin);
@@ -379,43 +413,58 @@ void processDigital(void) {
 // ANALOG_INPUT  0x02
 void processAnalog(void) {
   int dir = readBuffer(5);
-  int pin = readBuffer(6);
+  Serial.print("processAnalog :");
+  Serial.println(dir);
 
   switch(dir){
     case ANALOG_OUTPUT: 
       {
+        int pin = readBuffer(6);
+        int _gpio = OUTPUT_PINS[pin-1];
+        int channelNo = pin;                     // pin번호(1 ~ 5)를 채널번호(1 ~ 5)로 사용한다. 0번 채널은 서보모터에 사용
+
+        Serial.print("gpio : ");
+        Serial.println(_gpio);
+
+        Serial.print("channel : ");
+        Serial.println(channelNo);
+
         int val = readShort(7); //0 ~ 1023
-        // ledcAttachPin(pin, pin);  // pin번호를 채널번호로 사용한다.
-        // ledcSetup(pin, 5000, 8);
-        // delay(5);
-        // val = (int)map(val, 0, 100, 0, 255);   // 입력은 0에서 100사이 값으로 받는다.
-        // ledcWrite(pin, val);
+        ledcAttachPin(_gpio, channelNo);        // (핀번호, 채널번호)
+        ledcSetup(channelNo, 5000, 8);          // (채널번호, 주파수, 분해능)
+        delay(5);
+        val = (int)map(val, 0, 100, 0, 255);    // 입력은 0에서 100사이 값으로 받는다.
+        Serial.print("Value : ");
+        Serial.println(val);
+        ledcWrite(channelNo, val);              // (채널번호, 튜티)
         delay(5);
         callOK(ACT_ANALOG);
       }
       break;
     case ANALOG_INPUT:
       {
-        pinMode(pin, INPUT);
-        delay(5);
-        int analogValue = analogRead(pin);
-        delay(5);
+        Serial.println("*** Analog Input");
 
-        // 하위 8비트와 상위 2비트로 분리
-        // byte lowerByte = analogValue & 0xFF;
-        // byte upperByte = (analogValue >> 8) & 0x03;
+        int pin = readBuffer(6);
+        int _gpio = INPUT_PINS[pin-1];
+
+        Serial.print("gpio : ");
+        Serial.println(_gpio);
+
+        // 20240712 핀모드는 없어도 현재는 잘 동작한다. 참고 https://randomnerdtutorials.com/esp32-adc-analog-read-arduino-ide/
+        // pinMode(_gpio, INPUT);
+        // delay(5);
+
+        int analogValue = analogRead(_gpio);
+        delay(5);
+        Serial.print("Analog Value: ");
+        Serial.println(analogValue);
+
         writeHead(0);  // ff, 55
         writeSerial(2, RETURN_LENGTH);
         writeSerial(3, cmd_idx);
         writeSerial(4, ACT_ANALOG);
-
-        // writeSerial(lowerByte);
-        // writeSerial(upperByte);
-
-        // writeSerial(analogValue);
-        // writeSerial(0x00);
         writeShort(5, analogValue); // 5, 6  0~1023
-
         writeSerial(7, 0x00);
         writeSerial(8, 0x00);
         writeSerial(9, 0x00);
@@ -493,29 +542,24 @@ void processDCMotor() {
 
 void processServo() 
 {
-  
   int pin = readBuffer(5); // 현재는 필요없지만, 
   int angle = readBuffer(6);
-
-  Serial.print("Angle : ");
-  Serial.println(angle);
-
-  servo.setServo(angle);
-  delay(200);
+  // servo.setServo(angle);
+  // delay(200);
   callOK(ACT_SERVO);
 }
 
 void processReset() {
   // 모터 멈춤
   Serial.println("STOP------------");
-  analogWrite(MOT_R1_1, LOW);
-  analogWrite(MOT_R1_2, LOW);
-  analogWrite(MOT_R2_1, LOW);
-  analogWrite(MOT_R2_2, LOW);
-  analogWrite(MOT_L1_1, LOW);
-  analogWrite(MOT_L1_2, LOW);
-  analogWrite(MOT_L2_1, LOW);
-  analogWrite(MOT_L2_2, LOW);
+  // analogWrite(MOT_R1_1, LOW);
+  // analogWrite(MOT_R1_2, LOW);
+  // analogWrite(MOT_R2_1, LOW);
+  // analogWrite(MOT_R2_2, LOW);
+  // analogWrite(MOT_L1_1, LOW);
+  // analogWrite(MOT_L1_2, LOW);
+  // analogWrite(MOT_L2_1, LOW);
+  // analogWrite(MOT_L2_2, LOW);
   
 }
 
@@ -531,6 +575,7 @@ void parseData() {
   cmd_idx = (uint8_t)idx;
   action = readBuffer(4);
 
+  
   switch(action){
     case ACT_DIGITAL:
     {
@@ -633,14 +678,12 @@ class MyCallbacks : public BLECharacteristicCallbacks {
     std::string rxValue = pCharacteristic->getValue();
     // esp32 board : 3.0.2
     // String rxValue = pCharacteristic->getValue();
-    Serial.println("--- somthing write ---");
+    // Serial.println("***SomthingWrite***");
     if (rxValue.length() == PROTOCOL_PACKET_LEN) {
-    // 스크래치에서 온 데이터를 ESP32에서 사용하는 버퍼로 복사한다.
-    // str을 char*로 바꾸어서 복사한다.
-    // char* chValue = const_cast<char*>(rxValue.c_str());
       memcpy(rxBuffer, const_cast<char*>(rxValue.c_str()), PROTOCOL_PACKET_LEN);
       parseData();
     } else {
+      // Serial.println("Under 20");
       // Serial.printf("XXX Received Length is not 20 : %3d\n", rxValue.length()); 
       // Serial.println();
     }
@@ -744,6 +787,7 @@ void setup() {
 void reportSensor() { /* something */ }
 
 void loop() {
+
   if (deviceConnected) {
     // 스크래치에서 명령을 받으면 notifyFlag가 true가 되어서 리턴을 보낸다.
     if(notifyFlag) {
