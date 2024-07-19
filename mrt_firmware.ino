@@ -619,8 +619,8 @@ void parseData() {
 // #define HWID "0000000000"
 // #define MRT_NODE_NAME "MRT-NODE"
 // BLE Service Name
-// const char* DEVICE_NAME = "MRT-NODE";
-const char* DEVICE_NAME = "BitBlock MINI";
+const char* DEVICE_NAME = "MRT-NODE";
+// const char* DEVICE_NAME = "BitBlock MINI";
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pTxCharacteristic;
@@ -758,6 +758,9 @@ void setup() {
   //set the resolution to 12 bits (0-4095)
   //set the resolution to 10 bits (0-1023)
   analogReadResolution(10);
+  // analogWrite는 0 ~ 255
+  // 참고 : https://randomnerdtutorials.com/esp32-pwm-arduino-ide/
+  // void analogWriteResolution(uint8_t pin, uint8_t resolution);
   // delay(200);
 
   // ----------------------------------------
