@@ -10,7 +10,7 @@
 // #include "Wire.h"
 // #include <DHT11.h>
 // #include <NewPing.h>
-// #include "EspEasyServo.h"
+#include "EspEasyServo.h"
 
 // NODE용 헤더
 #include "NProtocol.h"
@@ -51,13 +51,16 @@ int OUTPUT_PINS[5] = {OUTPUT_PIN_01, OUTPUT_PIN_02, OUTPUT_PIN_03, OUTPUT_PIN_04
 #define MOT_L2_2 14
 
 // 초음파 ???
+const int ULTRASONIC_TIMEOUT_MICRO = 500000;  // 500 millis secs
 // VCC
 #define ULTRA_TRIG 4
 #define UlTRA_ECHO 5
 // GND
 
 // 서보모터
+// ESP32 API  https://docs.espressif.com/projects/arduino-esp32/en/latest/api/ledc.html
 #define SERVO_PIN 13
+EspEasyServo builtServo(LEDC_CHANNEL_0, (gpio_num_t)SERVO_PIN);
 
 // 자이로 ???
 #define GYRO_PIN_1 22
@@ -66,11 +69,6 @@ int OUTPUT_PINS[5] = {OUTPUT_PIN_01, OUTPUT_PIN_02, OUTPUT_PIN_03, OUTPUT_PIN_04
 // LCD ???
 #define LCD_PIN_1 22
 #define LCD_PIN_2 21
-
-
-// ESP32 API  https://docs.espressif.com/projects/arduino-esp32/en/latest/api/ledc.html
-// EspEasyServo servo(LEDC_CHANNEL_0, (gpio_num_t)13);
-
 
 // --------------------------------------------------------------------
 // 모터 드라이버 사용
@@ -97,7 +95,6 @@ void set_motor_pwm(int pwm, int IN1_PIN, int IN2_PIN)
 // set_motor_pwm(-100, MOT_R2_1, MOT_R2_2);     // CW
 
 
-const int ULTRASONIC_TIMEOUT_MICRO = 500000;  // 500 millis secs
 bool rcInitialize = false;
 bool touchInitialize = false;
 bool notifyFlag = false;
@@ -499,15 +496,31 @@ void processDCMotor() {
       Serial.println(motorSpeed * motorDir);
 
       if (motorNo == 0) {
+        // STOP
+        analogWrite(MOT_R1_1, 0);
+        analogWrite(MOT_R1_2, 0);
+        delay(5);
         // R1
         set_motor_pwm(motorSpeed * motorDir, MOT_R1_1, MOT_R1_2);
       } else if(motorNo == 1) {
+        // STOP
+        analogWrite(MOT_R2_1, 0);
+        analogWrite(MOT_R2_2, 0);
+        delay(5);
         // R2
         set_motor_pwm(motorSpeed * motorDir, MOT_R2_1, MOT_R2_2);
       } else if(motorNo == 2) {
+        // STOP
+        analogWrite(MOT_L1_1, 0);
+        analogWrite(MOT_L1_2, 0);
+        delay(5);
         // L1
         set_motor_pwm(motorSpeed * motorDir, MOT_L1_1, MOT_L1_2);
       } else if (motorNo == 3) {
+        // STOP
+        analogWrite(MOT_L2_1, 0);
+        analogWrite(MOT_L2_2, 0);
+        delay(5);
         // L2
         set_motor_pwm(motorSpeed * motorDir, MOT_L2_1, MOT_L2_2);
       }
@@ -544,9 +557,48 @@ void processServo()
 {
   int pin = readBuffer(5); // 현재는 필요없지만, 
   int angle = readBuffer(6);
-  // servo.setServo(angle);
-  // delay(200);
+  builtServo.setServo(angle);
+  delay(300);
   callOK(ACT_SERVO);
+}
+
+// #define ULTRA_TRIG 4
+// #define UlTRA_ECHO 5
+void processUltrasonic() {
+  int trig = ULTRA_TRIG;
+  int echo = UlTRA_ECHO;
+
+  pinMode(trig, OUTPUT);
+  pinMode(echo, INPUT);
+  delay(20);
+
+  digitalWrite(trig, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+
+  long duration = pulseIn(echo, HIGH, ULTRASONIC_TIMEOUT_MICRO);
+  int distance = duration * 0.017;
+  distance = constrain(distance, 0, 250);  // 0 ~ 250cm
+
+  writeHead(0);  // ff, 55
+  writeSerial(2, RETURN_LENGTH);  // lenght 16 -> 0x10
+  writeSerial(3, cmd_idx);
+  writeSerial(4, ACT_ULTRASONIC);
+  writeSerial(5, distance); 
+  writeSerial(6, 0x00);  
+  writeSerial(7, 0x00);
+  writeSerial(8, 0x00);
+  writeSerial(9, 0x00);
+  writeSerial(10, 0x00);
+  writeSerial(11, 0x00);
+  writeSerial(12, 0x00);
+  writeSerial(13, 0x00);
+  writeSerial(14, 0x00);
+  writeSerial(15, 0x00);
+  writeSerial(16, 0x00);
+  writeSerial(17, 0x00);
+  writeEnd(18);  // 13, 10
+  sendPacket();
 }
 
 void processReset() {
@@ -596,6 +648,11 @@ void parseData() {
     case ACT_SERVO:
     {
       processServo();
+      break;
+    }
+    case ACT_ULTRASONIC:
+    {
+      processUltrasonic();
       break;
     }
     case ACT_RESET_BOARD:
