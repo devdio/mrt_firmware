@@ -14,6 +14,7 @@
 
 // NODE용 헤더
 #include "NProtocol.h"
+#include "BbBuzzer.h"
 
 // Firmup 프로그램과 버전 맞춤
 #define FIRMWARE_VERSION  "Ver 1.0.1"
@@ -601,6 +602,52 @@ void processUltrasonic() {
   sendPacket();
 }
 
+// BUZZER_BEEP = 0x01
+// BUZZER_MELODY = 0x02
+// BUZZER_NOTE = 0x03
+void processBuzzer() {
+  int command = (int)readBuffer(5);
+  int pin = readBuffer(6);
+  int _gpio = OUTPUT_PINS[pin-1];
+  
+  Serial.print("gpio : ");
+  Serial.println(_gpio);
+
+  // int val = readBuffer(7);
+  // Serial.print("value : ");
+  // Serial.println(val);
+  
+  // pinMode(_gpio, OUTPUT);
+  // delay(5);
+  // digitalWrite(_gpio, val);
+  // callOK(ACT_DIGITAL);
+
+
+  switch(command) {
+    case BUZZER_BEEP:
+      BbBuzzer_beep(_gpio);
+      callOK(ACT_BUZZER);
+      break;
+    case BUZZER_MELODY:
+      {
+        int idx = (int)readBuffer(7); 
+        callNoResponse(ACT_BUZZER);
+        BbBuzzer_melody(_gpio, idx);
+      }
+      break;
+    case BUZZER_NOTE:
+      {
+        int note = (int)readBuffer(7);
+        int ah = (int)readBuffer(8);
+        int al = (int)readBuffer(9);
+        int duration = (ah << 8) | al;
+        callNoResponse(ACT_BUZZER);
+        BbBuzzer_toneNote(_gpio, note, duration);
+      }
+      break;
+  }
+}
+
 void processReset() {
   // 모터 멈춤
   Serial.println("STOP------------");
@@ -629,6 +676,11 @@ void parseData() {
 
   
   switch(action){
+    case ACT_BUZZER:
+    {
+      processBuzzer();
+      break;
+    }
     case ACT_DIGITAL:
     {
       processDigital();
