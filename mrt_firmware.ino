@@ -20,6 +20,14 @@
 // Firmup 프로그램과 버전 맞춤
 #define FIRMWARE_VERSION  "Ver 0.0.5"  // 20240729
 
+// LEDC_CHANNEL_MAX는 8이다. 
+// LEDC_CHANNEL_0 -> SERVO
+// LEDC_CHANNEL_1 -> BUZZER를 연결하고 나면, SERVO모터가 동작을 안한다.
+// 20240729 앞으로 PWM이 부족하면 아래 처럼 같은 방향의 채널을 고정 시킨다.
+// LEDC_CHANNEL_1 -> DC LEFT  
+// LEDC_CHANNEL_2 -> DC RIGHT  
+int LEDC_CHANNELS[5] = {LEDC_CHANNEL_3, LEDC_CHANNEL_4, LEDC_CHANNEL_5, LEDC_CHANNEL_6, LEDC_CHANNEL_7};
+
 
 // --------------------------------------------
 // PIN MAP
@@ -63,6 +71,8 @@ const int ULTRASONIC_TIMEOUT_MICRO = 500000;  // 500 millis secs
 // ESP32 API  https://docs.espressif.com/projects/arduino-esp32/en/latest/api/ledc.html
 #define SERVO_PIN 13
 EspEasyServo builtServo(LEDC_CHANNEL_0, (gpio_num_t)SERVO_PIN);
+
+
 
 // 자이로 ???
 #define GYRO_PIN_1 22
@@ -225,6 +235,7 @@ void callNG(uint8_t action) {
 
 void callOK(uint8_t action) {
   switch(action) {
+    case ACT_SERVO:
     case ACT_MATRIX_LED:
     case ACT_BUZZER:
     case ACT_ANALOG:
@@ -420,7 +431,7 @@ void processAnalog(void) {
       {
         int pin = readBuffer(6);
         int _gpio = OUTPUT_PINS[pin-1];
-        int channelNo = pin;                     // pin번호(1 ~ 5)를 채널번호(1 ~ 5)로 사용한다. 0번 채널은 서보모터에 사용
+        int channelNo = LEDC_CHANNELS[pin-1];                     // pin번호(1 ~ 5)를 채널번호(1 ~ 5)로 사용한다. 0번 채널은 서보모터에 사용
 
         Serial.print("gpio : ");
         Serial.println(_gpio);
@@ -429,8 +440,9 @@ void processAnalog(void) {
         Serial.println(channelNo);
 
         int val = readShort(7); //0 ~ 1023
-        ledcAttachPin(_gpio, channelNo);        // (핀번호, 채널번호)
+        
         ledcSetup(channelNo, 5000, 8);          // (채널번호, 주파수, 분해능)
+        ledcAttachPin(_gpio, channelNo);        // (핀번호, 채널번호)
         delay(5);
         val = (int)map(val, 0, 100, 0, 255);    // 입력은 0에서 100사이 값으로 받는다.
         Serial.print("Value : ");
@@ -557,10 +569,13 @@ void processDCMotor() {
 
 void processServo() 
 {
+  Serial.println("***** SERVO MOTOR");
+
   int pin = readBuffer(5); // 현재는 필요없지만, 
   int angle = readBuffer(6);
   builtServo.setServo(angle);
   delay(300);
+  Serial.println(">> CALL OK");
   callOK(ACT_SERVO);
 }
 
@@ -607,33 +622,33 @@ void processUltrasonic() {
 // BUZZER_MELODY = 0x02
 // BUZZER_NOTE = 0x03
 void processBuzzer() {
+  Serial.println("***** BUZZER");
   int command = (int)readBuffer(5);
   int pin = readBuffer(6);
   int _gpio = OUTPUT_PINS[pin-1];
-  
   Serial.print("gpio : ");
   Serial.println(_gpio);
 
-  // int val = readBuffer(7);
-  // Serial.print("value : ");
-  // Serial.println(val);
+  int channelNo = LEDC_CHANNELS[pin-1];  // pin번호(1 ~ 5)를 채널번호(1 ~ 5)로 사용한다. 0번 채널은 서보모터에 사용
+  Serial.print("channel : ");
+  Serial.println(channelNo);
   
-  // pinMode(_gpio, OUTPUT);
-  // delay(5);
-  // digitalWrite(_gpio, val);
-  // callOK(ACT_DIGITAL);
-
+  ledcSetup(channelNo, 5000, 8);          // (채널번호, 주파수, 분해능)
+  ledcAttachPin(_gpio, channelNo);        // (핀번호, 채널번호)
+  delay(5);
 
   switch(command) {
     case BUZZER_BEEP:
-      BbBuzzer_beep(_gpio);
+      BbBuzzer_beep(channelNo);
+      ledcDetachPin(channelNo);
       callOK(ACT_BUZZER);
       break;
     case BUZZER_MELODY:
       {
         int idx = (int)readBuffer(7); 
         callNoResponse(ACT_BUZZER);
-        BbBuzzer_melody(_gpio, idx);
+        BbBuzzer_melody(channelNo, idx);
+        ledcDetachPin(channelNo);
       }
       break;
     case BUZZER_NOTE:
@@ -643,7 +658,8 @@ void processBuzzer() {
         int al = (int)readBuffer(9);
         int duration = (ah << 8) | al;
         callNoResponse(ACT_BUZZER);
-        BbBuzzer_toneNote(_gpio, note, duration);
+        BbBuzzer_toneNote(channelNo, note, duration);
+        ledcDetachPin(channelNo);
       }
       break;
   }
@@ -657,13 +673,13 @@ void processTemper(void) {
   switch(sensor){
     case TEMPER_LM35:
       {
-        Serial.println("*** TEMPER_LM35");
+        // Serial.println("*** TEMPER_LM35");
 
         int pin = readBuffer(6);
         int _gpio = INPUT_PINS[pin-1];
 
-        Serial.print("gpio : ");
-        Serial.println(_gpio);
+        // Serial.print("gpio : ");
+        // Serial.println(_gpio);
 
         // 20240712 핀모드는 없어도 현재는 잘 동작한다. 참고 https://randomnerdtutorials.com/esp32-adc-analog-read-arduino-ide/
         // pinMode(_gpio, INPUT);

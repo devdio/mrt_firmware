@@ -173,36 +173,43 @@ int notes[] = {
 // #define BUZZZER_PIN 15
 
 
-void BbBuzzer_melody(int gpio, int idx) {
+void BbBuzzer_melody(int channelNo, int idx) {
   for (int thisNote = 0; thisNote < melodySize[idx]; thisNote++) {
     int noteDuration = 1000 / noteDurations[idx][thisNote];
-    tone(gpio, builtinMelody[idx][thisNote], noteDuration);
+    // tone(gpio, builtinMelody[idx][thisNote], noteDuration);
+    ledcWriteTone(channelNo, builtinMelody[idx][thisNote]);
 
     int pauseBetweenNotes = noteDuration * 1.08;
     delay(pauseBetweenNotes);
-    noTone(gpio);
+    // noTone(gpio);
+    ledcWriteTone(channelNo, 0);
   }
 }
 
-void BbBuzzer_beep(int gpio) {
-  tone(gpio, 1046 , 100);
+void BbBuzzer_beep(int channelNo) {
+  // tone(gpio, 1046 , 100);
+  ledcWriteTone(channelNo, 1046);
   delay(100*1.08);
   // noTone(gpio);
+  ledcWriteTone(channelNo, 0);
 }
 
-void BbBuzzer_toneNote(int gpio, int note, int duration) {
+void BbBuzzer_toneNote(int channelNo, int note, int duration) {
   // tone(gpio, notes[note], duration);
   int n = note;
   if (n > 83) {
     n = 83;
   }
-  tone(gpio, notes[n], duration);
+  // tone(gpio, notes[n], duration);
+  ledcWriteTone(channelNo, notes[n]);
   delay(duration * 1.08);
-  noTone(gpio);
+  // noTone(gpio);
+  ledcWriteTone(channelNo, 0);
 }
 
-void BbBuzzer_noToneNote(int gpio){
-  noTone(gpio);
+void BbBuzzer_noToneNote(int channelNo){
+  // noTone(gpio);
+  ledcWriteTone(channelNo, 0);
 }
 
 
