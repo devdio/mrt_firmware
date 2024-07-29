@@ -15,9 +15,10 @@
 // NODE용 헤더
 #include "NProtocol.h"
 #include "BbBuzzer.h"
+#include "BbLM35.h"
 
 // Firmup 프로그램과 버전 맞춤
-#define FIRMWARE_VERSION  "Ver 1.0.1"
+#define FIRMWARE_VERSION  "Ver 0.0.5"  // 20240729
 
 
 // --------------------------------------------
@@ -648,6 +649,76 @@ void processBuzzer() {
   }
 }
 
+// ANALOG_OUTPUT 0x01
+// ANALOG_INPUT  0x02
+void processTemper(void) {
+  int sensor = readBuffer(5);
+
+  switch(sensor){
+    case TEMPER_LM35:
+      {
+        Serial.println("*** TEMPER_LM35");
+
+        int pin = readBuffer(6);
+        int _gpio = INPUT_PINS[pin-1];
+
+        Serial.print("gpio : ");
+        Serial.println(_gpio);
+
+        // 20240712 핀모드는 없어도 현재는 잘 동작한다. 참고 https://randomnerdtutorials.com/esp32-adc-analog-read-arduino-ide/
+        // pinMode(_gpio, INPUT);
+        // delay(5);
+
+        short temp = (short)BbLm35_get(_gpio);
+        delay(5);
+        
+        Serial.print("temp : ");
+        Serial.println(temp);
+
+        writeHead(0);  // ff, 55
+        writeSerial(2, RETURN_LENGTH);
+        writeSerial(3, cmd_idx);
+        writeSerial(4, ACT_TEMPER);
+        writeShort(5, temp); // 5, 6  0~1023
+        writeSerial(7, 0x00);
+        writeSerial(8, 0x00);
+        writeSerial(9, 0x00);
+        writeSerial(10, 0x00);
+        writeSerial(11, 0x00);
+        writeSerial(12, 0x00);
+        writeSerial(13, 0x00);
+        writeSerial(14, 0x00);
+        writeSerial(15, 0x00);
+        writeSerial(16, 0x00);
+        writeSerial(17, 0x00);
+        writeEnd(18);  // 13, 10
+        sendPacket();
+      } 
+      break;
+    default:
+      writeHead(0);  // ff, 55
+      writeSerial(2, RETURN_LENGTH);
+      writeSerial(3, cmd_idx);
+      writeSerial(4, ACT_TEMPER);
+      // 온도 0으로 보냄
+      writeShort(5, 0); // 5, 6  0~1023
+      writeSerial(7, 0x00);
+      writeSerial(8, 0x00);
+      writeSerial(9, 0x00);
+      writeSerial(10, 0x00);
+      writeSerial(11, 0x00);
+      writeSerial(12, 0x00);
+      writeSerial(13, 0x00);
+      writeSerial(14, 0x00);
+      writeSerial(15, 0x00);
+      writeSerial(16, 0x00);
+      writeSerial(17, 0x00);
+      writeEnd(18);  // 13, 10
+      sendPacket();
+      break;
+  }
+}
+
 void processReset() {
   
   Serial.println("RESET!");
@@ -710,6 +781,11 @@ void parseData() {
     case ACT_ULTRASONIC:
     {
       processUltrasonic();
+      break;
+    }
+    case ACT_TEMPER:
+    {
+      processTemper();
       break;
     }
     case ACT_RESET_BOARD:

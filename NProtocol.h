@@ -21,7 +21,9 @@
 #define ACT_LIGHT       0xCC
 #define ACT_MIC         0xCD
 #define ACT_RCCAR       0xCE    // add for rc-car
-#define ACT_MAIN_SERVO  0xD0    
+#define ACT_MAIN_SERVO  0xD0
+// 20240729 추가 
+#define ACT_TEMPER      0xD1
 // #define ACT_BOARD_RESET 0xAA
 #define ACT_OK          0xFE
 #define ACT_ERROR       0xFF
@@ -52,7 +54,8 @@
 
 #define DCMOTOR_RUN       0x01
 #define DCMOTOR_STOP      0x02
-
+// 온도 센서 추가 
+#define TEMPER_LM35       0x01
 
 #define RCCAR_FORWARD       0x01
 #define RCCAR_BACKWARD      0x02
