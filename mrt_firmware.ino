@@ -649,17 +649,22 @@ void processBuzzer() {
 }
 
 void processReset() {
-  // 모터 멈춤
-  Serial.println("STOP------------");
-  // analogWrite(MOT_R1_1, LOW);
-  // analogWrite(MOT_R1_2, LOW);
-  // analogWrite(MOT_R2_1, LOW);
-  // analogWrite(MOT_R2_2, LOW);
-  // analogWrite(MOT_L1_1, LOW);
-  // analogWrite(MOT_L1_2, LOW);
-  // analogWrite(MOT_L2_1, LOW);
-  // analogWrite(MOT_L2_2, LOW);
   
+  Serial.println("RESET!");
+  // 모터 모두 멈춤
+  analogWrite(MOT_R1_1, 0);
+  analogWrite(MOT_R1_2, 0);
+  analogWrite(MOT_R2_1, 0);
+  analogWrite(MOT_R2_2, 0);
+  analogWrite(MOT_L1_1, 0);
+  analogWrite(MOT_L1_2, 0);
+  analogWrite(MOT_L2_1, 0);
+  analogWrite(MOT_L2_2, 0);
+
+  // 출력핀 모두 LOW 처리 
+  for (int i=0; i<5; i++) {
+    analogWrite(OUTPUT_PINS[i], 0);
+  }
 }
 
 
@@ -872,6 +877,15 @@ void setup() {
   // void analogWriteResolution(uint8_t pin, uint8_t resolution);
   // delay(200);
 
+  // ----------------------------------------
+  // 출력핀 초기화
+  //-----------------------------------------
+  for (int i=0; i<5; i++) {
+    pinMode(OUTPUT_PINS[i], OUTPUT);
+  }
+  // ----------------------------------------
+  // 입력핀 초기화 안함.
+  //-----------------------------------------
   // ----------------------------------------
   // 모터핀 초기화 
   //-----------------------------------------
